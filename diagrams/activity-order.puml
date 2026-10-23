@@ -1,0 +1,51 @@
+@startuml activity-order
+title Activity Diagram - Alur Order (Sistem Auto-Order UMKM)
+|Pembeli|
+start
+if (Pilih channel order?) then (Telegram)
+  :Kirim /start ke bot Telegram;
+  |Sistem (Bot/Web)|
+  :Tampilkan daftar produk & stok;
+  |Pembeli|
+  :Pilih produk & jumlah;
+else (Web)
+  :Buka form order web;
+  |Sistem (Bot/Web)|
+  :Tampilkan daftar produk & stok;
+  |Pembeli|
+  :Isi form (produk, jumlah, data pembeli);
+endif
+:Pilih metode bayar (QRIS / COD);
+|Sistem (Bot/Web)|
+:Simpan pesanan ke Supabase\n(status: menunggu);
+if (Channel?) then (Telegram)
+  :Bot kirim ringkasan pesanan;
+else (Web)
+  :Buka wa.me dengan teks pesanan terisi;
+  |Pembeli|
+  :Kirim pesan WA ke penjual;
+endif
+|Sistem (Bot/Web)|
+if (Metode bayar?) then (QRIS)
+  :Tampilkan QRIS statis;
+  |Pembeli|
+  :Bayar via QRIS & kirim bukti;
+  |Penjual|
+  :Cek pembayaran manual;
+  if (Pembayaran valid?) then (ya)
+    :Tandai "dibayar" di dashboard;
+  else (tidak)
+    :Batalkan pesanan di dashboard;
+    stop
+  endif
+else (COD)
+endif
+|Penjual|
+:Proses & kirim pesanan;
+:Update status & stok di dashboard;
+|Sistem (Bot/Web)|
+:Simpan perubahan status & stok\n(dashboard omzet ter-update);
+|Pembeli|
+:Terima pesanan\n(COD: bayar saat terima);
+stop
+@enduml

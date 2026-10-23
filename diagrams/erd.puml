@@ -1,0 +1,61 @@
+@startuml erd
+title ERD - Sistem Auto-Order UMKM (Supabase/PostgreSQL)
+hide circle
+skinparam linetype ortho
+entity sellers {
+  * id : uuid <<PK>>
+  --
+  * auth_user_id : uuid <<FK auth.users>>
+  * store_name : text
+  * whatsapp_number : text
+  telegram_chat_id : bigint
+  qris_image_url : text
+  created_at : timestamptz
+}
+entity customers {
+  * id : uuid <<PK>>
+  --
+  * seller_id : uuid <<FK>>
+  * name : text
+  phone : text
+  telegram_user_id : bigint
+  address : text
+  created_at : timestamptz
+}
+entity products {
+  * id : uuid <<PK>>
+  --
+  * seller_id : uuid <<FK>>
+  * name : text
+  * price : integer
+  * stock : integer
+  is_active : boolean
+  created_at : timestamptz
+}
+entity orders {
+  * id : uuid <<PK>>
+  --
+  * seller_id : uuid <<FK>>
+  * customer_id : uuid <<FK>>
+  * channel : text <<telegram|web>>
+  * payment_method : text <<qris|cod>>
+  * status : text <<menunggu|dibayar|diproses|dikirim|selesai|batal>>
+  * total : integer
+  payment_proof_url : text
+  created_at : timestamptz
+}
+entity order_items {
+  * id : uuid <<PK>>
+  --
+  * order_id : uuid <<FK>>
+  * product_id : uuid <<FK>>
+  * qty : integer
+  * unit_price : integer
+}
+sellers ||--o{ products
+sellers ||--o{ customers
+sellers ||--o{ orders
+customers ||--o{ orders
+orders ||--|{ order_items
+products ||--o{ order_items
+@enduml
