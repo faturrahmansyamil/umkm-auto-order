@@ -1,5 +1,5 @@
 @startuml erd
-title ERD - Sistem Auto-Order UMKM (Supabase/PostgreSQL)
+title ERD - UMKM Auto-Order (Supabase/PostgreSQL, migrasi 0001 + 0002)
 hide circle
 skinparam linetype ortho
 entity sellers {
@@ -30,6 +30,18 @@ entity products {
   * price : integer
   * stock : integer
   is_active : boolean
+  daily_quota : integer <<null = tanpa kuota>>
+  * preorder_lead_days : integer <<0..30>>
+  * aliases : text[]
+  created_at : timestamptz
+}
+entity delivery_zones {
+  * id : uuid <<PK>>
+  --
+  * seller_id : uuid <<FK>>
+  * name : text
+  * fee : integer
+  is_active : boolean
   created_at : timestamptz
 }
 entity orders {
@@ -37,9 +49,13 @@ entity orders {
   --
   * seller_id : uuid <<FK>>
   * customer_id : uuid <<FK>>
-  * channel : text <<telegram|web>>
+  delivery_zone_id : uuid <<FK>>
+  * channel : text <<telegram|web|chat>>
   * payment_method : text <<qris|cod>>
-  * status : text <<menunggu|dibayar|diproses|dikirim|selesai|batal>>
+  * status : order_status <<menunggu|dibayar|diproses|dikirim|selesai|batal>>
+  * delivery_date : date
+  * subtotal : integer
+  * delivery_fee : integer
   * total : integer
   payment_proof_url : text
   created_at : timestamptz
@@ -55,7 +71,9 @@ entity order_items {
 sellers ||--o{ products
 sellers ||--o{ customers
 sellers ||--o{ orders
+sellers ||--o{ delivery_zones
 customers ||--o{ orders
+delivery_zones |o--o{ orders
 orders ||--|{ order_items
 products ||--o{ order_items
 @enduml

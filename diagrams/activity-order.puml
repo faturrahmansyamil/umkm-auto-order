@@ -1,50 +1,72 @@
 @startuml activity-order
-title Activity Diagram - Alur Order (Sistem Auto-Order UMKM)
+title Activity Diagram - Alur Order (UMKM Auto-Order, migrasi 0002)
 |Pembeli|
 start
-if (Pilih channel order?) then (Telegram)
-  :Kirim /start ke bot Telegram;
-  |Sistem (Bot/Web)|
-  :Tampilkan daftar produk & stok;
+if (Channel order?) then (Web / wa.me - utama)
+  :Buka link toko /order\n(dari bio IG atau scan QR toko);
+  |Sistem|
+  :Tampilkan produk, stok,\nsisa kuota per tanggal & zona antar;
   |Pembeli|
   :Pilih produk & jumlah;
-else (Web)
-  :Buka form order web;
-  |Sistem (Bot/Web)|
-  :Tampilkan daftar produk & stok;
+  :Pilih tanggal kirim\n(>= hari ini + lead time pre-order terbesar);
+  :Pilih zona antar atau ambil sendiri;
+  :Isi nama, no. HP, alamat\n& metode bayar (QRIS / COD);
+elseif () then (Chat WA bebas)
+  :Kirim chat pesanan bebas ke WA penjual;
+  |Penjual|
+  :Tempel chat di dashboard\n(Tempel Chat);
+  |Sistem|
+  :Parser rule-based: cocokkan nama/alias produk,\njumlah, metode bayar & alamat;
+  :Tampilkan pratinjau + bagian tidak dikenali;
+  |Penjual|
+  :Periksa & edit pratinjau\n(produk, jumlah, tanggal, zona, bayar, alamat);
+else (Telegram - opsional, TELEGRAM_ENABLED=true)
   |Pembeli|
-  :Isi form (produk, jumlah, data pembeli);
+  :Kirim /pesan <no>x<jumlah> <qris|cod> ke bot;
 endif
-:Pilih metode bayar (QRIS / COD);
-|Sistem (Bot/Web)|
-:Simpan pesanan ke Supabase\n(status: menunggu);
-if (Channel?) then (Telegram)
-  :Bot kirim ringkasan pesanan;
-else (Web)
+|Sistem|
+:create_order: kunci baris produk (FOR UPDATE);
+if (Stok cukup, tanggal sesuai lead time,\nkuota tanggal belum penuh & zona valid?) then (ya)
+  :Kurangi stok;
+  :Simpan pesanan (status: menunggu)\ntotal = subtotal + ongkir zona;
+else (tidak)
+  :Tolak pesanan & tampilkan alasannya\n(stok / kuota penuh / tanggal / zona);
+  stop
+endif
+switch (Channel?)
+case (Web)
   :Buka wa.me dengan teks pesanan terisi;
+case (Chat WA)
+  :Tampilkan nomor pesanan ke penjual;
+case (Telegram)
+  :Bot kirim ringkasan pesanan & tanggal kirim;
+endswitch
+if (Channel Web?) then (ya)
   |Pembeli|
   :Kirim pesan WA ke penjual;
+else (tidak)
 endif
-|Sistem (Bot/Web)|
+|Pembeli|
 if (Metode bayar?) then (QRIS)
-  :Tampilkan QRIS statis;
-  |Pembeli|
-  :Bayar via QRIS & kirim bukti;
+  :Bayar via QRIS & kirim bukti lewat chat;
   |Penjual|
   :Cek pembayaran manual;
   if (Pembayaran valid?) then (ya)
-    :Tandai "dibayar" di dashboard;
+    :Ubah status ke "dibayar";
   else (tidak)
-    :Batalkan pesanan di dashboard;
+    :Ubah status ke "batal";
+    |Sistem|
+    :Trigger: kembalikan stok\n(pesanan batal tidak bisa diaktifkan lagi);
     stop
   endif
 else (COD)
 endif
 |Penjual|
-:Proses & kirim pesanan;
-:Update status & stok di dashboard;
-|Sistem (Bot/Web)|
-:Simpan perubahan status & stok\n(dashboard omzet ter-update);
+:Lihat daftar produksi per tanggal kirim;
+:Produksi & kirim pesanan;
+:Ubah status: diproses -> dikirim -> selesai;
+|Sistem|
+:Simpan status\n(dashboard omzet & produksi ter-update);
 |Pembeli|
 :Terima pesanan\n(COD: bayar saat terima);
 stop

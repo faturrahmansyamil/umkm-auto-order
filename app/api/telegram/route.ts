@@ -27,7 +27,11 @@ const HELP = [
   "Contoh: /pesan 1x2,3x1 cod",
 ].join("\n");
 
+/** Telegram opsional & mati secara default. Hanya aktif jika TELEGRAM_ENABLED=true. */
+const telegramEnabled = () => process.env.TELEGRAM_ENABLED === "true";
+
 export async function POST(req: NextRequest) {
+  if (!telegramEnabled()) return new NextResponse(null, { status: 404 });
   if (!validSecret(req.headers.get("x-telegram-bot-api-secret-token"))) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
@@ -77,6 +81,7 @@ export async function POST(req: NextRequest) {
         `Pesanan #${res.orderId.slice(0, 8)} tersimpan (status: menunggu)`,
         ...lines,
         `Total: ${rupiah(res.total)}`,
+        `Tanggal kirim: ${res.deliveryDate}`,
         payment === "qris"
           ? `Bayar via QRIS${qris ? `: ${qris}` : ""} lalu kirim bukti bayar ke penjual.`
           : "Bayar COD saat pesanan diterima.",

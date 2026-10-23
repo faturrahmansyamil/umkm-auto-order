@@ -1,18 +1,20 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
-import { listActiveProducts } from "@/lib/orders";
+import { listActiveProducts, listActiveZones } from "@/lib/orders";
+import type { Zone } from "@/lib/types";
 import OrderForm from "./order-form";
 
 
 async function Catalog() {
   await connection();
   let products: Awaited<ReturnType<typeof listActiveProducts>> = [];
+  let zones: Zone[] = [];
   let loadError = false;
-  try { products = await listActiveProducts(); } catch { loadError = true; }
+  try { [products, zones] = await Promise.all([listActiveProducts(), listActiveZones()]); } catch { loadError = true; }
   return loadError ? (
     <p className="mt-6 rounded bg-red-50 p-3 text-red-700">Produk belum bisa dimuat. Cek konfigurasi Supabase.</p>
   ) : (
-    <OrderForm products={products} qrisUrl={process.env.NEXT_PUBLIC_QRIS_IMAGE_URL || null} />
+    <OrderForm products={products} zones={zones} qrisUrl={process.env.NEXT_PUBLIC_QRIS_IMAGE_URL || null} />
   );
 }
 

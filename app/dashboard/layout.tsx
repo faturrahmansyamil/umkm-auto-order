@@ -11,7 +11,11 @@ async function Shell({ children }: { children: React.ReactNode }) {
         <b>{seller?.store_name ?? "Dashboard"}</b>
         <Link href="/dashboard">Ringkasan</Link>
         <Link href="/dashboard/orders">Pesanan</Link>
+        <Link href="/dashboard/tempel-chat">Tempel Chat</Link>
+        <Link href="/dashboard/produksi">Produksi</Link>
         <Link href="/dashboard/products">Produk</Link>
+        <Link href="/dashboard/zona">Zona Antar</Link>
+        <Link href="/dashboard/bagikan">Bagikan</Link>
         <form action={logout} className="ml-auto"><button className="text-sm text-zinc-500">Keluar ({user.email})</button></form>
       </nav>
       {seller ? children : <p>Akun ini belum terdaftar sebagai penjual (tabel <code>sellers</code>).</p>}

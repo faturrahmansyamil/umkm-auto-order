@@ -8,6 +8,14 @@ const base = z.object({
   price: z.coerce.number().int().min(0).max(1_000_000_000),
   stock: z.coerce.number().int().min(0).max(1_000_000),
   is_active: z.preprocess((v) => v === "on", z.boolean()),
+  // kosong = tanpa kuota
+  daily_quota: z.preprocess((v) => (v === "" || v == null ? null : v), z.coerce.number().int().min(1).max(100_000).nullable()),
+  preorder_lead_days: z.coerce.number().int().min(0).max(30).default(0),
+  // alias dipisah koma, untuk "Tempel chat jadi order"
+  aliases: z.preprocess(
+    (v) => String(v ?? "").split(",").map((a) => a.trim().toLowerCase()).filter(Boolean),
+    z.array(z.string().max(40)).max(20),
+  ),
 });
 
 export async function saveProduct(fd: FormData) {

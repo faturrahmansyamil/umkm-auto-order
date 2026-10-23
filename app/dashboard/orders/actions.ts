@@ -11,8 +11,12 @@ export async function updateStatus(fd: FormData) {
   if (!parsed.success) return;
   const { supabase, seller } = await requireSeller();
   if (!seller) return;
-  // RLS membatasi update hanya ke pesanan milik penjual ini
-  await supabase.from("orders").update({ status: parsed.data.status }).eq("id", parsed.data.id).eq("seller_id", seller.id);
+  // RLS membatasi update hanya ke pesanan milik penjual ini. Trigger DB mengembalikan stok saat -> batal
+  // dan menolak mengaktifkan lagi pesanan yang sudah batal.
+  const { error } = await supabase.from("orders").update({ status: parsed.data.status }).eq("id", parsed.data.id).eq("seller_id", seller.id);
+  if (error) console.error("update status failed", error.code);
   revalidatePath("/dashboard/orders");
+  revalidatePath("/dashboard/products");
+  revalidatePath("/dashboard/produksi");
   revalidatePath("/dashboard");
 }
